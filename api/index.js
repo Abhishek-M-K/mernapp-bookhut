@@ -109,7 +109,6 @@ app.get("/profile", (req, res) => {
   } else {
     res.json(null);
   }
-  res.json({ token });
 });
 
 //logout
@@ -224,7 +223,6 @@ app.put("/places", async (req, res) => {
         price,
       });
       await placeDoc.save();
-      res.json("ok");
     }
   });
 });
