@@ -13,7 +13,12 @@ const multer = require("multer");
 const fs = require("fs");
 require("dotenv").config();
 const app = express();
-
+app.use(
+  cors({
+    credentials: true,
+    origin: "https://mernapp-bookhut-5jqm.vercel.app/",
+  })
+);
 //create bcrypt salt for hashing the password, generating a secret string
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
@@ -30,12 +35,6 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 
 //frontend and api server endpoint
 //using cors for endpoint establishment
-app.use(
-  cors({
-    credentials: true,
-    origin: "https://mernapp-bookhut-5jqm.vercel.app/",
-  })
-);
 
 //middle --> mongoose database connection
 //using .env file for cluster connection
