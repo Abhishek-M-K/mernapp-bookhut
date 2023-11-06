@@ -13,12 +13,21 @@ const multer = require("multer");
 const fs = require("fs");
 require("dotenv").config();
 const app = express();
-app.use(
-  cors({
-    credentials: true,
-    origin: "https://mernapp-bookhut-5jqm.vercel.app/",
-  })
-);
+// app.use(
+//   cors({
+//     credentials: true,
+//     origin: "https://mernapp-bookhut-5jqm.vercel.app/",
+//   })
+// );
+
+const corsConfig = {
+  origin: "https://mernapp-bookhut-5jqm.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+};
+app.use(cors(corsConfig));
+app.options("", cors(corsConfig));
+
 //create bcrypt salt for hashing the password, generating a secret string
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
