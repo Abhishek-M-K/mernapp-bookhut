@@ -33,7 +33,7 @@ app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(
   cors({
     credentials: true,
-    origin: "https://mernapp-bookhut-6r1t-j0i3ncmn9-abhishek-m-k.vercel.app/",
+    origin: "https://mernapp-bookhut-5jqm.vercel.app/",
   })
 );
 
