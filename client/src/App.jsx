@@ -13,7 +13,7 @@ import SinglePage from "./pages/SinglePage";
 import BookingPage from "./pages/BookingPage";
 import BookedPage from "./pages/BookedPage";
 
-axios.defaults.baseURL = "http://localhost:4000";
+axios.defaults.baseURL = "https://backsample.onrender.com";
 axios.defaults.withCredentials = true;
 
 function App() {
