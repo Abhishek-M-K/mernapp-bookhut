@@ -23,17 +23,17 @@ const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(__dirname + "/uploads"));
-app.use(express.static(path.join(__dirname, "../client/dist")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../client/dist/index.html"));
-});
+// app.use(express.static(path.join(__dirname, "../client/dist")));
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../client/dist/index.html"));
+// });
 
 //frontend and api server endpoint
 //using cors for endpoint establishment
 app.use(
   cors({
     credentials: true,
-    origin: "http://localhost:5173",
+    origin: "https://subtle-cucurucho-c375cf.netlify.app",
   })
 );
 
