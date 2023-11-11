@@ -22,6 +22,10 @@ const app = express();
 //     origin: "https://mernapp-bookhut-5jqm.vercel.app/",
 //   })
 // );
+//create bcrypt salt for hashing the password, generating a secret string
+const bcryptSalt = bcrypt.genSaltSync(10);
+const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
+const bucket = "bookhut-abhishek";
 
 const corsConfig = {
   origin: "https://mernapp-bookhut-5jqm.vercel.app",
@@ -30,11 +34,6 @@ const corsConfig = {
 };
 app.use(cors(corsConfig));
 app.options("", cors(corsConfig));
-
-//create bcrypt salt for hashing the password, generating a secret string
-const bcryptSalt = bcrypt.genSaltSync(10);
-const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
-const bucket = "bookhut-abhishek";
 
 app.use(express.json());
 app.use(cookieParser());
@@ -63,6 +62,15 @@ async function uploadToS3(path, originalFilename, mimetype) {
   );
   return `https://${bucket}.s3.amazonaws.com/${newName}`;
   //console.log({ data });
+}
+
+function getDataFromToken(req) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
+      if (err) throw err;
+      resolve(userData);
+    });
+  });
 }
 
 app.get("/test", (req, res) => {
@@ -287,15 +295,6 @@ app.post("/bookings", async (req, res) => {
       throw err;
     });
 });
-
-function getDataFromToken(req) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
-      if (err) throw err;
-      resolve(userData);
-    });
-  });
-}
 
 app.get("/bookings", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
