@@ -3,6 +3,7 @@ import AccountNav from "../AccountNav";
 import Perks from "../Perks";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Image from "../Image";
 export default function PlacesFormPage() {
   const { id } = useParams();
   const [title, setTitle] = useState("");
@@ -181,9 +182,9 @@ export default function PlacesFormPage() {
               //h-32 or hav is used to maintain the symm size of photos
               //objet-cover is used to maintain the photo even if it's stretched
               <div className="h-32 flex relative" key={link}>
-                <img
+                <Image
                   className="rounded-2xl w-full object-cover"
-                  src={"https://backsample.onrender.com/uploads/" + link}
+                  src={link}
                   alt=""
                 />
                 <button

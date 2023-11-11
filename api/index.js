@@ -10,6 +10,9 @@ const Booking = require("./models/Booking.js");
 const bcrypt = require("bcryptjs");
 const cookieParser = require("cookie-parser");
 const multer = require("multer");
+const mime = require("mime-types");
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+
 const fs = require("fs");
 require("dotenv").config();
 const app = express();
@@ -31,57 +34,69 @@ app.options("", cors(corsConfig));
 //create bcrypt salt for hashing the password, generating a secret string
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
-// app.use("/uploads", express.static(path.join(__dirname, "/../uploads")));
+const bucket = "bookhut-abhishek";
 
-// app.use("/uploads", express.static('/uploads'));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(__dirname + "/uploads"));
-// app.use(express.static(path.join(__dirname, "../client/dist")));
-// app.get("*", (req, res) => {
-//   res.sendFile(path.join(__dirname, "../client/dist/index.html"));
-// });
 
-//frontend and api server endpoint
-//using cors for endpoint establishment
+async function uploadToS3(path, originalFilename, mimetype) {
+  const client = new S3Client({
+    region: "ap-south-1", //mumbai
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY,
+      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+    },
+  });
 
-//middle --> mongoose database connection
-//using .env file for cluster connection
-//using dotenv package
-// console.log(process.env.MONGO_URL); connection established
-mongoose.connect(process.env.MONGO_URL);
+  const parts = originalFilename.split(".");
+  const ext = parts[parts.length - 1];
+  const newName = Date.now() + "." + ext;
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Body: fs.readFileSync(path),
+      Key: newName,
+      ContentType: mimetype,
+      ACL: "public-read",
+    })
+  );
+  return `https://${bucket}.s3.amazonaws.com/${newName}`;
+  //console.log({ data });
+}
 
 app.get("/test", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   res.json("test ok");
 });
 
 //async await function
 app.post("/register", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { name, email, password } = req.body;
   try {
     const userData = await User.create({
       name,
       email,
-      //rn password is clear text, to encrypt/hashing we'll use bcryptjs
       password: bcrypt.hashSync(password, bcryptSalt), //params should be strings, but since here bcrytSalt is an object , we declare it with Sync
     });
     res.json(userData);
   } catch (e) {
     res.status(422).json(e);
-    //422 status code for unprocesible entity
-    //this is when an user already exists with same email id
   }
 });
 
 app.post("/login", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { email, password } = req.body;
   //find user with the email
   const userData = await User.findOne({ email });
   if (userData) {
-    // res.json("found");
     const passCorrect = bcrypt.compareSync(password, userData.password);
     if (passCorrect) {
-      //creating token that needs to be passed as cookie along with the response json using JWT :)
       jwt.sign(
         {
           email: userData.email,
@@ -105,6 +120,8 @@ app.post("/login", async (req, res) => {
 });
 
 app.get("/profile", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { token } = req.cookies;
   if (token) {
     // params 4
@@ -124,38 +141,39 @@ app.post("/logout", (req, res) => {
   res.cookie("token", "").json(true);
 });
 
-// console.log({ __dirname });
 //adding photos by link
 app.post("/upload-by-link", async (req, res) => {
   const { link } = req.body;
   const newName = "photo" + Date.now() + ".jpg";
   await imageDownloader.image({
     url: link,
-    dest: __dirname + "/uploads/" + newName,
+    dest: "/tmp/" + newName,
   });
-  res.json(newName);
+  const url = await uploadToS3(
+    "/tmp/" + newName,
+    newName,
+    mime.lookup("/tmp/" + newName)
+  );
+  res.json(url);
 });
 
 //uploading photos
-const photosMiddleware = multer({ dest: "uploads/" });
-app.post("/upload", photosMiddleware.array("photos", 100), (req, res) => {
+const photosMiddleware = multer({ dest: "/tmp" });
+app.post("/upload", photosMiddleware.array("photos", 100), async (req, res) => {
   const uploadedFiles = [];
   // to keep the track of photos uploaded for a dest
   //to make webp extension to jpg / jpeg
   for (let i = 0; i < req.files.length; i++) {
-    const { path, originalname } = req.files[i];
-    const parts = originalname.split("."); // the orginal name will be separated by . and thus we can change extension
-    const ext = parts[parts.length - 1];
-    const newPath = path + "." + ext;
-    fs.renameSync(path, newPath);
-    uploadedFiles.push(newPath.replace("uploads/", ""));
+    const { path, originalname, mimetype } = req.files[i];
+    const url = await uploadToS3(path, originalname, mimetype);
+    uploadedFiles.push(url);
   }
-
-  //res.json(req.files); //this before changing the ext
   res.json(uploadedFiles);
 });
 
 app.post("/places", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { token } = req.cookies;
   const {
     title,
@@ -188,6 +206,8 @@ app.post("/places", (req, res) => {
 });
 
 app.get("/user-places", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { token } = req.cookies;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     const { id } = userData;
@@ -196,11 +216,15 @@ app.get("/user-places", (req, res) => {
 });
 
 app.get("/places/:id", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { id } = req.params;
   res.json(await Place.findById(id));
 });
 
 app.put("/places", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   //const { id } = req.params;
   const { token } = req.cookies;
   const {
@@ -236,10 +260,14 @@ app.put("/places", async (req, res) => {
 });
 
 app.get("/places", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   res.json(await Place.find());
 });
 
 app.post("/bookings", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const userData = await getDataFromToken(req);
   const { place, checkIn, checkOut, guests, name, phone, price } = req.body;
   Booking.create({
@@ -270,11 +298,10 @@ function getDataFromToken(req) {
 }
 
 app.get("/bookings", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const userData = await getDataFromToken(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 });
 
 app.listen(4000);
-
-//dummy
-//dummy2003

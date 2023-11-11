@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Image from "./Image";
 
 export default function PlaceGallery({ place }) {
   const [show, setShow] = useState(false);
@@ -34,10 +35,7 @@ export default function PlaceGallery({ place }) {
           {place?.photos?.length > 0 &&
             place.photos.map((photo) => (
               <div>
-                <img
-                  src={"https://backsample.onrender.com/uploads/" + photo}
-                  alt=""
-                />
+                <Image src={photo} alt="" />
               </div>
             ))}
         </div>
@@ -51,10 +49,8 @@ export default function PlaceGallery({ place }) {
         <div>
           {place.photos?.[0] && (
             <div>
-              <img
-                src={
-                  "https://backsample.onrender.com/uploads/" + place.photos[0]
-                }
+              <Image
+                src={place.photos[0]}
                 alt=""
                 className="cursor-pointer aspect-square object-cover"
                 onClick={() => setShow(true)}
@@ -65,8 +61,8 @@ export default function PlaceGallery({ place }) {
 
         <div className="grid">
           {place.photos?.[1] && (
-            <img
-              src={"https://backsample.onrender.com/uploads/" + place.photos[1]}
+            <Image
+              src={place.photos[1]}
               alt=""
               className="aspect-square object-cover cursor-pointer"
               onClick={() => setShow(true)}
@@ -74,10 +70,8 @@ export default function PlaceGallery({ place }) {
           )}
           <div className="overflow-hidden">
             {place.photos?.[2] && (
-              <img
-                src={
-                  "https://backsample.onrender.com/uploads/" + place.photos[2]
-                }
+              <Image
+                src={place.photos[2]}
                 alt=""
                 className="cursor-pointer aspect-square object-cover relative top-2"
                 onClick={() => setShow(true)}
