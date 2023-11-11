@@ -1,7 +1,7 @@
 export default function Image({ src, ...rest }) {
   src =
-    src && src.includes("http://")
+    src && src.includes("https://")
       ? src
-      : "https://backsample.onrender.com/uploads/" + src;
+      : "http://backsample.onrender.com/uploads/" + src;
   return <img {...rest} src={src} alt={""} />;
 }
