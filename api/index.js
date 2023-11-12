@@ -87,7 +87,6 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  //find user with the email
   const userData = await User.findOne({ email });
 
   if (!userData) {
@@ -97,7 +96,7 @@ app.post("/login", async (req, res) => {
   const match = bcrypt.compare(password, userData.password);
 
   if (!match) {
-    return res.status(401).json("Wrong Password");
+    return res.status(400).json("Wrong Password");
   }
 
   const token = jwt.sign(
