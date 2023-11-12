@@ -102,29 +102,24 @@ app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   //find user with the email
   const userData = await User.findOne({ email });
-  if (userData) {
-    const passCorrect = bcrypt.compareSync(password, userData.password);
-    if (passCorrect) {
-      jwt.sign(
-        {
-          email: userData.email,
-          id: userData._id,
-          name: userData.name,
-        },
-        jwtSecret,
-        {},
-        (err, token) => {
-          if (err) throw err;
-          res.cookie("token", token).json(userData);
-        }
-      );
-      //res.json("password is ok");
-    } else {
-      res.status(422).json("password is wrong");
-    }
-  } else {
-    res.json("not found");
+
+  if (!userData) {
+    return res.status(404).json("User not found, Please register first");
   }
+
+  const match = bcrypt.compare(password, userData.password);
+
+  if (!match) {
+    return res.status(401).json("Wrong Password");
+  }
+
+  const token = jwt.sign(
+    { email: userData.email, id: userData._id },
+    jwtSecret,
+    { expiresIn: "1h" }
+  );
+
+  res.cookie("token", token, { httpOnly: true }).json(userData);
 });
 
 app.get("/profile", (req, res) => {
