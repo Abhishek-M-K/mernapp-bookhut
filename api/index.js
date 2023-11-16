@@ -59,12 +59,23 @@ async function uploadToS3(path, originalFilename, mimetype) {
   //console.log({ data });
 }
 
-function getDataFromToken(req) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
-      if (err) throw err;
+// function getDataFromToken(req) {
+//   return new Promise((resolve, reject) => {
+//     jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
+//       if (err) throw err;
+//       resolve(userData);
+//     });
+//   });
+// }
+
+async function getDataFromToken(req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userData = await jwt.verify(req.cookies.token, jwtSecret);
       resolve(userData);
-    });
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
