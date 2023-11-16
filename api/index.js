@@ -16,12 +16,7 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const fs = require("fs");
 require("dotenv").config();
 const app = express();
-// app.use(
-//   cors({
-//     credentials: true,
-//     origin: "https://mernapp-bookhut-5jqm.vercel.app/",
-//   })
-// );
+
 //create bcrypt salt for hashing the password, generating a secret string
 const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
@@ -38,8 +33,6 @@ app.options("", cors(corsConfig));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(__dirname + "/uploads"));
-
-mongoose.connect(process.env.MONGO_URL);
 
 async function uploadToS3(path, originalFilename, mimetype) {
   const client = new S3Client({
@@ -66,13 +59,25 @@ async function uploadToS3(path, originalFilename, mimetype) {
   //console.log({ data });
 }
 
+function getDataFromToken(req) {
+  return new Promise((resolve, reject) => {
+    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
+      if (err) throw err;
+      resolve(userData);
+    });
+  });
+}
+
 app.get("/test", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   res.json("test ok");
 });
 
 //async await function
 app.post("/register", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const { name, email, password } = req.body;
+
   try {
     const userData = await User.create({
       name,
@@ -86,37 +91,46 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const { email, password } = req.body;
   const userData = await User.findOne({ email });
 
-  if (!userData) {
-    return res.status(404).json("User not found, Please register first");
+  if (userData) {
+    const passOk = bcrypt.compareSync(password, userData.password);
+
+    if (passOk) {
+      jwt.sign(
+        {
+          email: userData.email,
+          id: userData._id,
+        },
+        jwtSecret,
+        {},
+        (err, token) => {
+          if (err) throw err;
+          res.cookie("token", token).json(userData);
+        }
+      );
+    } else {
+      res.status(422).json("Wrong Password");
+    }
+  } else {
+    res.json("not found");
   }
-
-  const match = bcrypt.compare(password, userData.password);
-
-  if (!match) {
-    return res.status(400).json("Wrong Password");
-  }
-
-  const token = jwt.sign(
-    { email: userData.email, id: userData._id },
-    jwtSecret,
-    { expiresIn: "1h" }
-  );
-
-  res.cookie("token", token, { httpOnly: true }).json(userData);
 });
 
 app.get("/profile", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
+
   const { token } = req.cookies;
   if (token) {
     // params 4
     // 1. token 2. secret salt key used for hashing 3. options {object} 4. call back func
     // we have a call back funcn for err and data of the user
-    jwt.verify(token, jwtSecret, {}, (err, data) => {
+    jwt.verify(token, jwtSecret, {}, async (err, data) => {
       if (err) throw err;
-      res.json(data);
+      const { name, email, _id } = await User.findById(data.id);
+      res.json({ name, email, _id });
     });
   } else {
     res.json(null);
@@ -130,6 +144,7 @@ app.post("/logout", (req, res) => {
 
 //adding photos by link
 app.post("/upload-by-link", async (req, res) => {
+  //mongoose.connect(process.env.MONGO_URL);
   const { link } = req.body;
   const newName = "photo" + Date.now() + ".jpg";
   await imageDownloader.image({
@@ -159,6 +174,7 @@ app.post("/upload", photosMiddleware.array("photos", 100), async (req, res) => {
 });
 
 app.post("/places", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   const {
     title,
@@ -171,7 +187,7 @@ app.post("/places", (req, res) => {
     checkOut,
     maxGuests,
   } = req.body;
-  console.log(req.body);
+  //console.log(req.body);
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     if (err) throw err;
     const placeDoc = await Place.create({
@@ -191,6 +207,7 @@ app.post("/places", (req, res) => {
 });
 
 app.get("/user-places", (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
     const { id } = userData;
@@ -199,11 +216,13 @@ app.get("/user-places", (req, res) => {
 });
 
 app.get("/places/:id", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const { id } = req.params;
   res.json(await Place.findById(id));
 });
 
 app.put("/places", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   //const { id } = req.params;
   const { token } = req.cookies;
   const {
@@ -234,15 +253,18 @@ app.put("/places", async (req, res) => {
         price,
       });
       await placeDoc.save();
+      res.json("ok");
     }
   });
 });
 
 app.get("/places", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   res.json(await Place.find());
 });
 
 app.post("/bookings", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const userData = await getDataFromToken(req);
   const { place, checkIn, checkOut, guests, name, phone, price } = req.body;
   Booking.create({
@@ -264,17 +286,33 @@ app.post("/bookings", async (req, res) => {
 });
 
 app.get("/bookings", async (req, res) => {
+  mongoose.connect(process.env.MONGO_URL);
   const userData = await getDataFromToken(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 });
 
-function getDataFromToken(req) {
-  return new Promise((resolve, reject) => {
-    jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
-      if (err) throw err;
-      resolve(userData);
-    });
-  });
-}
-
 app.listen(4000);
+/*if (!userData) {
+    return res.status(404).json("User not found, Please register first");
+  }
+
+  const match = bcrypt.compare(password, userData.password);
+
+  if (!match) {
+    return res.status(400).json("Wrong Password");
+  }
+
+  const token = jwt.sign(
+    { email: userData.email, id: userData._id },
+    jwtSecret,
+    { expiresIn: "1h" }
+  );
+
+  res.cookie("token", token, { httpOnly: true }).json(userData);*/
+
+// app.use(
+//   cors({
+//     credentials: true,
+//     origin: "https://mernapp-bookhut-5jqm.vercel.app/",
+//   })
+// );
