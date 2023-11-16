@@ -186,7 +186,7 @@ app.post("/upload", photosMiddleware.array("photos", 100), async (req, res) => {
 
 app.post("/places", (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
-  const { token } = req.cookies;
+  const { token } = req.cookies.token;
   const {
     title,
     address,
