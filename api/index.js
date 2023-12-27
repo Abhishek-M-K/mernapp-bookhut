@@ -22,17 +22,16 @@ const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
 const bucket = "bookhut-abhishek";
 
-// const corsConfig = {
-//   origin: "http://127.0.0.1:5173",
-//   credentials: true,
-//   methods: ["GET", "POST", "PUT", "DELETE"],
-// };
-// app.use(cors(corsConfig));
-// app.options("", cors(corsConfig));
+const corsConfig = {
+  origin: "https://mernapp-bookhut-5jqm.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+};
+app.use(cors(corsConfig));
+app.options("", cors(corsConfig));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(__dirname + "/uploads"));
-app.use(cors({ credentials: true, origin: "http://127.0.0.1:5173" }));
 
 async function uploadToS3(path, originalFilename, mimetype) {
   const client = new S3Client({
@@ -59,24 +58,13 @@ async function uploadToS3(path, originalFilename, mimetype) {
   //console.log({ data });
 }
 
-async function getDataFromToken(req) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const userData = await jwt.verify(req.cookies.token, jwtSecret);
-      resolve(userData);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
-
-app.get("/api/test", (req, res) => {
+app.get("test", (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   res.json("test ok");
 });
 
 //async await function
-app.post("/api/register", async (req, res) => {
+app.post("register", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { name, email, password } = req.body;
 
@@ -92,7 +80,7 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-app.post("/api/login", async (req, res) => {
+app.post("login", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { email, password } = req.body;
   const userData = await User.findOne({ email });
@@ -121,7 +109,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.get("/api/profile", (req, res) => {
+app.get("profile", (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
 
   const { token } = req.cookies;
@@ -140,12 +128,12 @@ app.get("/api/profile", (req, res) => {
 });
 
 //logout
-app.post("/api/logout", (req, res) => {
+app.post("logout", (req, res) => {
   res.cookie("token", "").json(true);
 });
 
 //adding photos by link
-app.post("/api/upload-by-link", async (req, res) => {
+app.post("upload-by-link", async (req, res) => {
   //mongoose.connect(process.env.MONGO_URL);
   const { link } = req.body;
   const newName = "photo" + Date.now() + ".jpg";
@@ -179,7 +167,7 @@ app.post(
   }
 );
 
-app.post("/api/places", (req, res) => {
+app.post("places", (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies.token;
   const {
@@ -212,7 +200,7 @@ app.post("/api/places", (req, res) => {
   });
 });
 
-app.get("/api/user-places", (req, res) => {
+app.get("user-places", (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { token } = req.cookies;
   jwt.verify(token, jwtSecret, {}, async (err, userData) => {
@@ -221,13 +209,13 @@ app.get("/api/user-places", (req, res) => {
   });
 });
 
-app.get("/api/places/:id", async (req, res) => {
+app.get("places/:id", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const { id } = req.params;
   res.json(await Place.findById(id));
 });
 
-app.put("/api/places", async (req, res) => {
+app.put("places", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   //const { id } = req.params;
   const { token } = req.cookies;
@@ -264,12 +252,12 @@ app.put("/api/places", async (req, res) => {
   });
 });
 
-app.get("/api/places", async (req, res) => {
+app.get("places", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   res.json(await Place.find());
 });
 
-app.post("/api/bookings", async (req, res) => {
+app.post("bookings", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const userData = await getDataFromToken(req);
   const { place, checkIn, checkOut, guests, name, phone, price } = req.body;
@@ -291,34 +279,21 @@ app.post("/api/bookings", async (req, res) => {
     });
 });
 
-app.get("/api/bookings", async (req, res) => {
+app.get("bookings", async (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
   const userData = await getDataFromToken(req);
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 });
 
+async function getDataFromToken(req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userData = await jwt.verify(req.cookies.token, jwtSecret);
+      resolve(userData);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 app.listen(4000);
-/*if (!userData) {
-    return res.status(404).json("User not found, Please register first");
-  }
-
-  const match = bcrypt.compare(password, userData.password);
-
-  if (!match) {
-    return res.status(400).json("Wrong Password");
-  }
-
-  const token = jwt.sign(
-    { email: userData.email, id: userData._id },
-    jwtSecret,
-    { expiresIn: "1h" }
-  );
-
-  res.cookie("token", token, { httpOnly: true }).json(userData);*/
-
-// app.use(
-//   cors({
-//     credentials: true,
-//     origin: "https://mernapp-bookhut-5jqm.vercel.app/",
-//   })
-// );

@@ -13,7 +13,7 @@ import SinglePage from "./pages/SinglePage";
 import BookingPage from "./pages/BookingPage";
 import BookedPage from "./pages/BookedPage";
 
-axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
+axios.defaults.baseURL = "https://backsample.onrender.com";
 axios.defaults.withCredentials = true;
 
 function App() {
