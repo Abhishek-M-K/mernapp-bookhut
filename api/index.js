@@ -59,14 +59,16 @@ async function uploadToS3(path, originalFilename, mimetype) {
   //console.log({ data });
 }
 
-// function getDataFromToken(req) {
-//   return new Promise((resolve, reject) => {
-//     jwt.verify(req.cookies.token, jwtSecret, {}, async (err, userData) => {
-//       if (err) throw err;
-//       resolve(userData);
-//     });
-//   });
-// }
+async function getDataFromToken(req) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userData = await jwt.verify(req.cookies.token, jwtSecret);
+      resolve(userData);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
 
 app.get("/api/test", (req, res) => {
   mongoose.connect(process.env.MONGO_URL);
@@ -295,16 +297,6 @@ app.get("/api/bookings", async (req, res) => {
   res.json(await Booking.find({ user: userData.id }).populate("place"));
 });
 
-async function getDataFromToken(req) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const userData = await jwt.verify(req.cookies.token, jwtSecret);
-      resolve(userData);
-    } catch (err) {
-      reject(err);
-    }
-  });
-}
 app.listen(4000);
 /*if (!userData) {
     return res.status(404).json("User not found, Please register first");
