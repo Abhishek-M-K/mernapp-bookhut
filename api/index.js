@@ -22,17 +22,17 @@ const bcryptSalt = bcrypt.genSaltSync(10);
 const jwtSecret = "hsgjdhfkahjkkfhdsfdsfkjd"; //random string
 const bucket = "bookhut-abhishek";
 
-const corsConfig = {
-  origin: "http://127.0.0.1:5173",
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-};
-app.use(cors(corsConfig));
-app.options("", cors(corsConfig));
-
+// const corsConfig = {
+//   origin: "http://127.0.0.1:5173",
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "DELETE"],
+// };
+// app.use(cors(corsConfig));
+// app.options("", cors(corsConfig));
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(__dirname + "/uploads"));
+app.use(cors({ credentials: true, origin: "http://127.0.0.1:5173" }));
 
 async function uploadToS3(path, originalFilename, mimetype) {
   const client = new S3Client({
